@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="web.spring.mapper.PaymentMapper">
+
+	<select id="get" resultType="web.spring.vo.UserVO">
+		select User_name, User_address from user_info where User_id = #{User_id}
+	</select>
+	
+	<update id="updateStocks">
+		update product_board set pboard_unit_stocks = #{pboard_unit_stocks} where pboard_unit_no = #{pboard_unit_no}
+	</update>
+	
+	<insert id="insertOrder">
+		<selectKey resultType="String" order="BEFORE" keyProperty="order_id"> select order_sequence.nextval from dual </selectKey>
+		insert into order_board (order_id, order_address, order_name, order_status, product_id, user_id, order_totalprice, order_totalcount, pboard_unit_no, pboard_user_id)
+		values (#{order_id}, #{order_address}, #{order_name}, '1', #{product_id}, #{user_id}, #{order_totalprice}, #{order_totalcount}, #{pboard_unit_no}, #{pboard_user_id})
+	</insert>
+
+	<select id="getOrderList" resultType="web.spring.vo.OrderVO">
+		select order_board.* from (
+			select rownum num, o.*, p.product_name from (select * from order_board where user_id = '${user_id}') o
+			left join products_info p 
+			on o.product_id = p.product_id 
+			where o.product_id is not null order by to_number(o.order_id) desc) 
+		order_board where num between #{pageNo} * #{amount}-9 and #{pageNo} * #{amount}
+	</select>
+	
+	<select id="getOrderListTotal" resultType="int">
+		select count(*) from order_board where user_id = #{user_id}
+	</select>
+	
+	<select id="getOrderComList" resultType="web.spring.vo.OrderVO">
+		select ob.* from (
+			select rownum num, order_board.*, pi.product_name from (
+				select orderb.* from (
+					select o.* 
+					from order_board o 
+					left join product_board p 
+					on o.pboard_unit_no = p.pboard_unit_no 
+					where o.pboard_unit_no is not null 
+					and p.user_id= #{pboard_user_id}
+				) orderb
+			)order_board left join products_info pi on order_board.product_id = pi.product_id order by to_number(order_board.order_id) desc
+		) ob
+		where num between #{pageNo} * #{amount}-9 and #{pageNo} * #{amount} 
+
+	</select>
+	
+	<select id="getOrderComListTotal" resultType="int">
+		select count(*) from order_board where pboard_user_id = #{pboard_user_id}
+	</select>
+	
+	<select id="getOrderAllList" resultType="web.spring.vo.OrderVO">
+		select order_board.* from (
+			select rownum num, o.*, p.product_name from (select * from order_board) o
+			left join products_info p 
+			on o.product_id = p.product_id 
+			where o.product_id is not null order by to_number(o.order_id) desc) 
+		order_board where num between #{pageNo} * #{amount}-9 and #{pageNo} * #{amount}
+	</select>
+	
+	<select id="getOrderAllListTotal" resultType="int">
+		select count(*) from order_board
+	</select>
+	
+	<select id="getOrderStatus" resultType="web.spring.vo.OrderVO">
+		select order_status from order_board where order_id = #{order_id}
+	</select>
+	
+	<insert id="insertCart">
+		<selectKey resultType="String" order="BEFORE" keyProperty="cart_id"> select cart_sequence.nextval from dual </selectKey>
+		insert into cart_board (cart_id, user_address, user_name, user_id, product_id, product_name, cart_totalprice, pboard_unit_no, cart_totalcount, pboard_unit_stocks)
+		values (#{cart_id}, #{user_address}, #{user_name}, #{user_id}, #{product_id}, #{product_name}, #{cart_totalprice}, #{pboard_unit_no}, #{cart_totalcount}, #{pboard_unit_stocks})
+	</insert>
+	
+	<select id="getCartList" resultType="web.spring.vo.CartVO">
+		select cart_board.* from (select rownum num, cart_board.* from (select * from cart_board where user_id = #{user_id} order by cart_id desc) cart_board ) cart_board where num between #{pageNo} * #{amount}-9 and #{pageNo} * #{amount}
+	</select>
+	
+	<select id="getCartListTotal" resultType="int">
+		select count(*) from cart_board where user_id = #{user_id}
+	</select>
+	
+	<delete id="deleteCart">
+		delete from cart_board where cart_id = #{cart_id}
+	</delete>
+	
+	<update id="updateOrderList">
+		update order_board set order_status=#{order_status} where order_id=#{order_id}
+	</update>
+	
+	<select id="getProduct" resultType="web.spring.vo.PBoardVO">
+		select pboard_unit_stocks from product_board where pboard_unit_no=#{pboard_unit_no}
+	</select>
+</mapper>
